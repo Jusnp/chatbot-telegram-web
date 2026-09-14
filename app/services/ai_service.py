@@ -10,6 +10,7 @@ load_dotenv(override=True)
 BASE_DIR = Path(__file__).resolve().parents[2]
 MANUAL_KNOWLEDGE_FILE = BASE_DIR / "data" / "conocimiento.txt"
 DOCUMENT_KNOWLEDGE_FILE = BASE_DIR / "data" / "conocimiento_documentos.txt"
+SHEET_KNOWLEDGE_FILE = BASE_DIR / "data" / "conocimiento_sheet.txt"
 
 
 def _read_text(path: Path) -> str:
@@ -28,6 +29,10 @@ def cargar_conocimiento() -> str:
     documents = _read_text(DOCUMENT_KNOWLEDGE_FILE)
     if documents:
         sections.append("===== DOCUMENTOS CARGADOS =====\n" + documents)
+
+    sheet = _read_text(SHEET_KNOWLEDGE_FILE)
+    if sheet:
+        sections.append("===== GOOGLE SHEET =====\n" + sheet)
 
     return "\n\n".join(sections)
 

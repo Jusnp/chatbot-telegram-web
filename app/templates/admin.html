@@ -41,6 +41,16 @@
             <p class="hint">Nota: se admiten archivos Excel .xlsx. Los archivos antiguos .xls deben convertirse a .xlsx. Los PDF escaneados como imagen todavía no se leen.</p>
         </section>
 
+        <section class="card upload-card">
+            <div>
+                <h2>Google Sheet</h2>
+                <p>Sincroniza el "Armagedón" (hoja de cálculo privada) para que el chatbot use su contenido como conocimiento.</p>
+            </div>
+            <form action="/admin/sync-sheet" method="post">
+                <button type="submit">Sincronizar Google Sheet</button>
+            </form>
+        </section>
+
         <section class="card">
             <div class="section-heading">
                 <div>
