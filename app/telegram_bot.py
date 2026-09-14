@@ -9,7 +9,34 @@ from app.services.ai_service import responder_pregunta
 load_dotenv()
 
 
+def _usuarios_permitidos() -> set[int]:
+    crudo = os.getenv("TELEGRAM_ALLOWED_IDS", "")
+    return {int(x.strip()) for x in crudo.split(",") if x.strip()}
+
+
+def _autorizado(update: Update) -> bool:
+    permitidos = _usuarios_permitidos()
+    if not permitidos:
+        return False
+    return update.effective_user is not None and update.effective_user.id in permitidos
+
+
+async def _rechazar(update: Update) -> None:
+    # La base de conocimiento incluye accesos a plataformas, por eso el bot
+    # solo responde a IDs de Telegram en TELEGRAM_ALLOWED_IDS.
+    uid = update.effective_user.id if update.effective_user else "desconocido"
+    print(f"Acceso rechazado para el usuario de Telegram con ID: {uid}")
+    await update.message.reply_text(
+        "No tienes autorización para usar este bot. "
+        f"Pide al administrador que agregue tu ID de Telegram ({uid}) a TELEGRAM_ALLOWED_IDS."
+    )
+
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not _autorizado(update):
+        await _rechazar(update)
+        return
+
     await update.message.reply_text(
         "Hola. Soy tu asistente virtual. Envíame una pregunta y trataré de ayudarte."
     )
@@ -17,6 +44,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message or not update.message.text:
+        return
+
+    if not _autorizado(update):
+        await _rechazar(update)
         return
 
     await update.message.chat.send_action("typing")

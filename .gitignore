@@ -18,6 +18,10 @@ data/documentos/
 
 # Conocimiento generado automáticamente
 data/conocimiento_documentos.txt
+data/conocimiento_sheet.txt
+
+# Credenciales de Google (cuenta de servicio)
+credentials/
 
 # VS Code
 .vscode/
