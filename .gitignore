@@ -1,0 +1,27 @@
+# Entorno virtual
+venv/
+
+# Variables secretas
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Archivos temporales
+*.log
+
+# Documentos subidos por los usuarios
+data/documentos/
+
+# Conocimiento generado automáticamente
+data/conocimiento_documentos.txt
+
+# VS Code
+.vscode/
+
+# Sistema
+.DS_Store
+Thumbs.db

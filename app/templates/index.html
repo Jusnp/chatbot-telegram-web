@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <main class="chat-shell">
+        <header>
+            <div>
+                <h1>Asistente Virtual</h1>
+                <p>Web y Telegram compartirán el mismo conocimiento.</p>
+            </div>
+            <div class="header-actions"><a class="admin-link" href="/admin">Administrar conocimiento</a><span class="status">● En línea</span></div>
+        </header>
+
+        <section id="messages" class="messages">
+            <div class="message bot">Hola 👋. Escríbeme una pregunta.</div>
+        </section>
+
+        <form id="chat-form" class="composer">
+            <input id="message" type="text" placeholder="Escribe tu pregunta..." autocomplete="off" required>
+            <button type="submit">Enviar</button>
+        </form>
+    </main>
+
+    <script src="/static/chat.js"></script>
+</body>
+</html>

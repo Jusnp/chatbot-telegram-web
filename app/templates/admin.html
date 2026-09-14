@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Administrar conocimiento</title>
+    <link rel="stylesheet" href="/static/admin.css">
+</head>
+<body>
+    <main class="admin-shell">
+        <header class="admin-header">
+            <div>
+                <span class="eyebrow">ASISTENTE VIRTUAL</span>
+                <h1>Administrar conocimiento</h1>
+                <p>Sube documentos para que el chatbot pueda usar esa información tanto en la web como en Telegram.</p>
+            </div>
+            <a class="back-link" href="/">← Volver al chat</a>
+        </header>
+
+        {% if ok %}
+            <div class="alert success">{{ ok }}</div>
+        {% endif %}
+        {% if error %}
+            <div class="alert error">{{ error }}</div>
+        {% endif %}
+
+        <section class="card upload-card">
+            <div>
+                <h2>Subir documento</h2>
+                <p>Formatos permitidos: PDF, DOCX, TXT y Excel (.XLSX). Tamaño máximo: 10 MB.</p>
+            </div>
+
+            <form action="/admin/upload" method="post" enctype="multipart/form-data" class="upload-form">
+                <label class="file-picker">
+                    <input type="file" name="file" accept=".pdf,.docx,.txt,.xlsx" required>
+                    <span>Seleccionar archivo</span>
+                </label>
+                <button type="submit">Subir e incorporar</button>
+            </form>
+
+            <p class="hint">Nota: se admiten archivos Excel .xlsx. Los archivos antiguos .xls deben convertirse a .xlsx. Los PDF escaneados como imagen todavía no se leen.</p>
+        </section>
+
+        <section class="card">
+            <div class="section-heading">
+                <div>
+                    <h2>Documentos cargados</h2>
+                    <p>{{ documents|length }} documento(s) disponible(s).</p>
+                </div>
+            </div>
+
+            {% if documents %}
+                <div class="document-list">
+                    {% for doc in documents %}
+                        <article class="document-row">
+                            <div class="doc-icon">{{ doc.type }}</div>
+                            <div class="doc-info">
+                                <strong>{{ doc.name }}</strong>
+                                <span>{{ doc.size_kb }} KB</span>
+                            </div>
+                            <form action="/admin/delete/{{ doc.name }}" method="post" onsubmit="return confirm('¿Eliminar este documento?');">
+                                <button class="delete-btn" type="submit">Eliminar</button>
+                            </form>
+                        </article>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <strong>Aún no hay documentos.</strong>
+                    <span>Sube el primero usando el formulario de arriba.</span>
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="info-grid">
+            <div class="mini-card">
+                <strong>Web</strong>
+                <span>Usa automáticamente los documentos cargados.</span>
+            </div>
+            <div class="mini-card">
+                <strong>Telegram</strong>
+                <span>Comparte exactamente la misma base de conocimiento.</span>
+            </div>
+            <div class="mini-card">
+                <strong>Actualización</strong>
+                <span>No necesitas reiniciar el servidor al subir un documento.</span>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

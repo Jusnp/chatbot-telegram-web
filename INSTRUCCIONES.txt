@@ -1,0 +1,19 @@
+ACTUALIZACION PARA SOPORTE DE EXCEL (.XLSX)
+
+1. Copia las carpetas app y el archivo requirements.txt sobre tu proyecto actual.
+2. Acepta combinar carpetas y reemplazar archivos.
+3. NO borres ni reemplaces tu archivo .env.
+4. Activa el entorno virtual:
+   .\venv\Scripts\Activate.ps1
+5. Instala/actualiza dependencias:
+   python -m pip install -r requirements.txt
+6. Inicia la web:
+   python -m uvicorn app.main:app
+7. Entra a http://127.0.0.1:8000/admin
+8. Ahora podrás seleccionar archivos .xlsx.
+
+IMPORTANTE:
+- Se leen todas las hojas del libro.
+- Cada fila se convierte en texto para que Gemini pueda usarla como conocimiento.
+- Los archivos antiguos .xls no son compatibles directamente; ábrelos en Excel y guárdalos como .xlsx.
+- Si una hoja contiene fórmulas, se intenta leer el último valor calculado guardado por Excel.

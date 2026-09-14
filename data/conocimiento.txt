@@ -1,0 +1,10 @@
+INFORMACIÓN PROPIA DEL CHATBOT
+
+Aquí puedes escribir información que quieras que el chatbot conozca.
+
+Ejemplo:
+- Nombre de la organización: Mi Empresa.
+- Horario de atención: lunes a viernes de 8:00 a.m. a 5:00 p.m.
+- Ciudad: Medellín, Colombia.
+
+Puedes borrar estos ejemplos y reemplazarlos por tu información real.
