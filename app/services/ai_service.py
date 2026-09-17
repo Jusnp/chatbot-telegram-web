@@ -13,14 +13,14 @@ from app.services.sheets_service import (
 )
 
 
-# ============================================================
-# CONFIGURACIÓN
-# ============================================================
-
 load_dotenv(
     override=True
 )
 
+
+# ============================================================
+# CONFIGURACIÓN
+# ============================================================
 
 BASE_DIR = (
     Path(__file__)
@@ -28,20 +28,17 @@ BASE_DIR = (
     .parents[2]
 )
 
-
 MANUAL_KNOWLEDGE_FILE = (
     BASE_DIR
     / "data"
     / "conocimiento.txt"
 )
 
-
 DOCUMENT_KNOWLEDGE_FILE = (
     BASE_DIR
     / "data"
     / "conocimiento_documentos.txt"
 )
-
 
 MAX_FRAGMENT_CHARS = 1400
 
@@ -110,7 +107,7 @@ STOPWORDS = {
 
 
 # ============================================================
-# LEER ARCHIVOS
+# ARCHIVOS
 # ============================================================
 
 def _read_text(
@@ -127,7 +124,7 @@ def _read_text(
 
 
 # ============================================================
-# NORMALIZAR TEXTO
+# TEXTO
 # ============================================================
 
 def _normalizar(
@@ -153,23 +150,6 @@ def _normalizar(
     )
 
 
-def _raiz_termino(
-    termino: str
-) -> str:
-
-    if termino.isdigit():
-        return termino
-
-    # actas -> acta
-    if (
-        len(termino) > 4
-        and termino.endswith("s")
-    ):
-        return termino[:-1]
-
-    return termino
-
-
 def _terminos(
     texto: str
 ) -> set[str]:
@@ -180,11 +160,8 @@ def _terminos(
     )
 
     return {
-        _raiz_termino(
-            palabra
-        )
-        for palabra
-        in palabras
+        palabra
+        for palabra in palabras
         if (
             palabra not in STOPWORDS
             and (
@@ -208,7 +185,7 @@ def _numeros(
 
 
 # ============================================================
-# CALCULAR COINCIDENCIAS
+# COINCIDENCIAS EN DOCUMENTOS
 # ============================================================
 
 def _calcular_coincidencia(
@@ -223,12 +200,7 @@ def _calcular_coincidencia(
     )
 
     if not terminos_pregunta:
-
-        return (
-            0,
-            0.0,
-            0
-        )
+        return 0, 0.0, 0
 
     terminos_texto = (
         _terminos(
@@ -248,20 +220,12 @@ def _calcular_coincidencia(
         )
     )
 
-    # Si el usuario pregunta por
-    # un número concreto, debe
-    # aparecer exactamente.
     if numeros_pregunta:
 
         if not numeros_pregunta.issubset(
             numeros_texto
         ):
-
-            return (
-                0,
-                0.0,
-                0
-            )
+            return 0, 0.0, 0
 
     coincidencias = (
         terminos_pregunta
@@ -273,15 +237,12 @@ def _calcular_coincidencia(
     for termino in coincidencias:
 
         if termino.isdigit():
-
             score += 20
 
         else:
-
             score += 3
 
     if numeros_pregunta:
-
         score += 40
 
     cobertura = (
@@ -295,10 +256,6 @@ def _calcular_coincidencia(
         len(coincidencias)
     )
 
-
-# ============================================================
-# VERIFICAR SI UNA COINCIDENCIA ES CONFIABLE
-# ============================================================
 
 def _es_coincidencia_confiable(
     pregunta: str,
@@ -325,22 +282,15 @@ def _es_coincidencia_confiable(
     )
 
     if numeros_pregunta:
-
         return score >= 40
 
     if not terminos_pregunta:
-
         return False
 
-    if len(
-        terminos_pregunta
-    ) == 1:
-
+    if len(terminos_pregunta) == 1:
         return cantidad >= 1
 
-    if len(
-        terminos_pregunta
-    ) == 2:
+    if len(terminos_pregunta) == 2:
 
         return (
             cantidad >= 1
@@ -354,7 +304,7 @@ def _es_coincidencia_confiable(
 
 
 # ============================================================
-# CREAR FRAGMENTOS DE DOCUMENTOS
+# FRAGMENTOS
 # ============================================================
 
 def _crear_fragmentos_documentos(
@@ -362,7 +312,6 @@ def _crear_fragmentos_documentos(
 ) -> list[str]:
 
     if not texto:
-
         return []
 
     parrafos = [
@@ -375,7 +324,7 @@ def _crear_fragmentos_documentos(
         if parrafo.strip()
     ]
 
-    fragmentos: list[str] = []
+    fragmentos = []
 
     actual = ""
 
@@ -389,7 +338,6 @@ def _crear_fragmentos_documentos(
         ):
 
             if actual:
-
                 actual += "\n\n"
 
             actual += parrafo
@@ -437,7 +385,7 @@ def _crear_fragmentos_documentos(
 
 
 # ============================================================
-# BUSCADOR GENERAL EN TEXTO
+# BÚSQUEDA EN TEXTO
 # ============================================================
 
 def _buscar_en_texto(
@@ -447,24 +395,20 @@ def _buscar_en_texto(
 ) -> list[dict]:
 
     if not contenido:
-
         return []
 
-    candidatos: list[dict] = []
+    candidatos = []
 
-    fragmentos = (
+    for fragmento in (
         _crear_fragmentos_documentos(
             contenido
         )
-    )
-
-    for fragmento in fragmentos:
+    ):
 
         if not _es_coincidencia_confiable(
             pregunta,
             fragmento
         ):
-
             continue
 
         score, cobertura, cantidad = (
@@ -492,45 +436,29 @@ def _buscar_en_texto(
     return candidatos[:limite]
 
 
-# ============================================================
-# 2. BUSCAR EN ARCHIVOS SUBIDOS
-# ============================================================
-
 def buscar_documentos(
     pregunta: str
 ) -> list[dict]:
 
-    contenido = _read_text(
-        DOCUMENT_KNOWLEDGE_FILE
-    )
-
     return _buscar_en_texto(
         pregunta,
-        contenido
+        _read_text(
+            DOCUMENT_KNOWLEDGE_FILE
+        )
     )
 
-
-# ============================================================
-# 3. BUSCAR EN conocimiento.txt
-# ============================================================
 
 def buscar_conocimiento_manual(
     pregunta: str
 ) -> list[dict]:
 
-    contenido = _read_text(
-        MANUAL_KNOWLEDGE_FILE
-    )
-
     return _buscar_en_texto(
         pregunta,
-        contenido
+        _read_text(
+            MANUAL_KNOWLEDGE_FILE
+        )
     )
 
-
-# ============================================================
-# FORMATEAR RESPUESTAS DE ARCHIVOS
-# ============================================================
 
 def _formatear_resultado_texto(
     resultados: list[dict],
@@ -539,7 +467,6 @@ def _formatear_resultado_texto(
 ) -> str:
 
     if not resultados:
-
         return ""
 
     textos = [
@@ -551,21 +478,20 @@ def _formatear_resultado_texto(
     return (
         titulo
         + "\n\n"
-        + "\n\n".join(
-            textos
-        )
+        + "\n\n".join(textos)
         + f"\n\nFuente: {fuente}"
     )
 
 
 # ============================================================
-# 4. GEMINI
+# GEMINI
 # ============================================================
 
 def _consultar_gemini(
     api_key: str,
     modelo: str,
-    pregunta: str
+    pregunta: str,
+    contexto_previo: str | None = None
 ) -> str:
 
     client = genai.Client(
@@ -583,18 +509,29 @@ Antes de consultarte, el sistema ya buscó en:
 2. Archivos internos subidos.
 3. Base de conocimiento manual.
 
-No se encontró una respuesta interna suficientemente confiable.
+No encontró una respuesta interna suficientemente confiable.
 
 Puedes responder preguntas de conocimiento general.
 
-Si la pregunta solicita información privada,
-específica o interna de una organización,
-institución, acta, documento, persona o registro
-al que no tienes acceso, no inventes datos.
+Si la pregunta solicita información interna,
+privada o específica de una organización,
+persona, sistema, acta, documento o registro
+y no tienes esa información, no inventes datos.
 
-Indica claramente que esa información no fue
-encontrada en las fuentes internas disponibles.
+Indica claramente cuando la información no
+esté disponible.
 """.strip()
+
+    entrada = pregunta
+
+    if contexto_previo:
+
+        entrada = (
+            f"Contexto anterior del usuario:\n"
+            f"{contexto_previo}\n\n"
+            f"Pregunta actual:\n"
+            f"{pregunta}"
+        )
 
     try:
 
@@ -602,7 +539,7 @@ encontrada en las fuentes internas disponibles.
             client.interactions.create(
                 model=modelo,
                 system_instruction=instrucciones,
-                input=pregunta,
+                input=entrada,
             )
         )
 
@@ -614,8 +551,8 @@ encontrada en las fuentes internas disponibles.
         return (
             texto
             or
-            "No pude generar una "
-            "respuesta en este momento."
+            "No pude generar una respuesta "
+            "en este momento."
         )
 
     finally:
@@ -628,21 +565,24 @@ encontrada en las fuentes internas disponibles.
 # ============================================================
 
 async def responder_pregunta(
-    pregunta: str
+    pregunta: str,
+    contexto_previo: str | None = None
 ) -> str:
 
     """
-    ESTA FUNCIÓN LA USAN:
+    Prioridad:
 
-    - Telegram
-    - Página Web
-
-    PRIORIDAD:
-
-    1. Google Sheet real
-    2. PDF / DOCX / XLSX / TXT
+    1. Google Sheet
+    2. Archivos subidos
     3. conocimiento.txt
     4. Gemini
+
+    contexto_previo es opcional.
+    Por eso la web actual puede seguir llamando:
+
+        responder_pregunta(pregunta)
+
+    sin romperse.
     """
 
     pregunta = (
@@ -657,10 +597,21 @@ async def responder_pregunta(
             "para poder ayudarte."
         )
 
+    # Para búsquedas internas podemos añadir
+    # contexto cuando Telegram detecta una
+    # pregunta de seguimiento.
+    pregunta_busqueda = pregunta
+
+    if contexto_previo:
+
+        pregunta_busqueda = (
+            f"{contexto_previo} "
+            f"{pregunta}"
+        )
+
 
     # ========================================================
-    # PRIORIDAD 1
-    # GOOGLE SHEET REAL
+    # 1. GOOGLE SHEET
     # ========================================================
 
     try:
@@ -668,7 +619,7 @@ async def responder_pregunta(
         resultados_sheet = (
             await asyncio.to_thread(
                 buscar_en_sheet,
-                pregunta
+                pregunta_busqueda
             )
         )
 
@@ -686,8 +637,7 @@ async def responder_pregunta(
     if resultados_sheet:
 
         print(
-            "[BUSCADOR] "
-            "Respuesta encontrada "
+            "[BUSCADOR] Respuesta encontrada "
             "en GOOGLE SHEET."
         )
 
@@ -699,22 +649,19 @@ async def responder_pregunta(
 
 
     # ========================================================
-    # PRIORIDAD 2
-    # ARCHIVOS SUBIDOS
-    # PDF / DOCX / XLSX / TXT
+    # 2. DOCUMENTOS
     # ========================================================
 
     resultados_documentos = (
         buscar_documentos(
-            pregunta
+            pregunta_busqueda
         )
     )
 
     if resultados_documentos:
 
         print(
-            "[BUSCADOR] "
-            "Respuesta encontrada "
+            "[BUSCADOR] Respuesta encontrada "
             "en ARCHIVOS SUBIDOS."
         )
 
@@ -731,21 +678,19 @@ async def responder_pregunta(
 
 
     # ========================================================
-    # PRIORIDAD 3
-    # conocimiento.txt
+    # 3. CONOCIMIENTO MANUAL
     # ========================================================
 
     resultados_manual = (
         buscar_conocimiento_manual(
-            pregunta
+            pregunta_busqueda
         )
     )
 
     if resultados_manual:
 
         print(
-            "[BUSCADOR] "
-            "Respuesta encontrada "
+            "[BUSCADOR] Respuesta encontrada "
             "en CONOCIMIENTO.TXT."
         )
 
@@ -762,14 +707,12 @@ async def responder_pregunta(
 
 
     # ========================================================
-    # PRIORIDAD 4
-    # GEMINI
+    # 4. GEMINI
     # ========================================================
 
     print(
-        "[BUSCADOR] "
-        "No se encontró información interna. "
-        "Consultando GEMINI..."
+        "[BUSCADOR] No se encontró información "
+        "interna. Consultando GEMINI..."
     )
 
     api_key = os.getenv(
@@ -783,17 +726,15 @@ async def responder_pregunta(
     ):
 
         return (
-            "No encontré la respuesta "
-            "en las fuentes internas y "
-            "Gemini no está configurado."
+            "No encontré la respuesta en las "
+            "fuentes internas y Gemini no "
+            "está configurado."
         )
-
 
     modelo = os.getenv(
         "GEMINI_MODEL",
         "gemini-3.6-flash"
     )
-
 
     try:
 
@@ -803,6 +744,7 @@ async def responder_pregunta(
                 api_key,
                 modelo,
                 pregunta,
+                contexto_previo,
             )
         )
 
@@ -811,7 +753,6 @@ async def responder_pregunta(
             + "\n\nFuente: Gemini."
         )
 
-
     except Exception as error:
 
         mensaje_error = (
@@ -819,16 +760,9 @@ async def responder_pregunta(
             .lower()
         )
 
-
-        # ====================================================
-        # LÍMITE GRATUITO GEMINI
-        # ====================================================
-
         if (
-            "429"
-            in mensaje_error
-            or "quota"
-            in mensaje_error
+            "429" in mensaje_error
+            or "quota" in mensaje_error
             or "too_many_requests"
             in mensaje_error
             or "rate limit"
@@ -836,42 +770,24 @@ async def responder_pregunta(
         ):
 
             return (
-                "⚠️ No encontré la respuesta "
-                "en las fuentes internas y "
-                "Gemini alcanzó temporalmente "
+                "⚠️ Gemini alcanzó temporalmente "
                 "su límite gratuito.\n\n"
-                "Espera aproximadamente "
-                "un minuto e intenta nuevamente."
+                "Espera aproximadamente un minuto "
+                "e intenta nuevamente."
             )
 
-
-        # ====================================================
-        # ERROR DE RED
-        # ====================================================
-
         if (
-            "readerror"
-            in mensaje_error
-            or "timeout"
-            in mensaje_error
-            or "network"
-            in mensaje_error
-            or "connection"
-            in mensaje_error
+            "readerror" in mensaje_error
+            or "timeout" in mensaje_error
+            or "network" in mensaje_error
+            or "connection" in mensaje_error
         ):
 
             return (
-                "⚠️ No encontré la respuesta "
-                "en las fuentes internas y "
-                "en este momento existe "
-                "un problema de conexión "
-                "con Gemini."
+                "⚠️ Hay un problema temporal "
+                "de conexión con Gemini. "
+                "Intenta nuevamente."
             )
-
-
-        # ====================================================
-        # OTRO ERROR
-        # ====================================================
 
         print(
             "[ERROR GEMINI]",
@@ -880,8 +796,6 @@ async def responder_pregunta(
         )
 
         return (
-            "⚠️ No encontré la respuesta "
-            "en las fuentes internas y "
-            "ocurrió un error al "
-            "consultar Gemini."
+            "⚠️ Ocurrió un error al consultar "
+            "el asistente."
         )
