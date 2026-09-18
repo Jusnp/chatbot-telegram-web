@@ -107,6 +107,16 @@ STOPWORDS = {
     "muestra",
     "muéstrame",
     "necesito",
+    "puedes",
+    "puede",
+    "podrias",
+    "podria",
+    "dar",
+    "quiero",
+    "quisiera",
+    "favor",
+    "porfa",
+    "saber",
 }
 
 
@@ -198,6 +208,12 @@ def _normalizar(texto: str) -> str:
         r"\bdirreccion\b": "direccion",
         r"\bdireccionn\b": "direccion",
         r"\bcontrsena\b": "contrasena",
+
+        # Errores comunes en nombres y consultas.
+        r"\bpremiun\b": "premium",
+        r"\bplaz\b": "plaza",
+        r"\bwiffi\b": "wifi",
+        r"\bwi[ -]?fi\b": "wifi",
     }
 
     for patron, reemplazo in correcciones.items():
