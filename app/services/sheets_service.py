@@ -214,6 +214,7 @@ def _normalizar(texto: str) -> str:
         r"\bplaz\b": "plaza",
         r"\bwiffi\b": "wifi",
         r"\bwi[ -]?fi\b": "wifi",
+        r"\bbit[\s_-]*defender\b": "bitdefender",
     }
 
     for patron, reemplazo in correcciones.items():
