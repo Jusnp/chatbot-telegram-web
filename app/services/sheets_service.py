@@ -7,6 +7,7 @@ import re
 import unicodedata
 
 import gspread
+from gspread.utils import fill_gaps
 from dotenv import load_dotenv
 from google.oauth2.service_account import Credentials
 
@@ -204,6 +205,9 @@ def _normalizar(texto: str) -> str:
     # Corrección de algunos errores comunes.
     correcciones = {
         r"\bcalve\b": "clave",
+        r"\bclaves\b": "clave",
+        r"\bcontrasenas\b": "contrasena",
+        r"\bwifis\b": "wifi",
         r"\bdirrecion\b": "direccion",
         r"\bdirreccion\b": "direccion",
         r"\bdireccionn\b": "direccion",
@@ -299,6 +303,36 @@ def _get_client() -> gspread.Client:
 
 
 # ============================================================
+# IDS DE GOOGLE SHEETS
+# ============================================================
+
+def _obtener_sheet_ids() -> list[str]:
+    """
+    Admite uno o varios libros:
+      GOOGLE_SHEET_ID=id1
+      GOOGLE_SHEET_IDS=id2,id3
+    Se pueden usar ambas variables a la vez.
+    """
+
+    valores = ",".join(
+        os.getenv(nombre, "")
+        for nombre in (
+            "GOOGLE_SHEET_ID",
+            "GOOGLE_SHEET_IDS",
+        )
+    )
+
+    ids = [
+        valor.strip()
+        for valor in valores.split(",")
+        if valor.strip()
+    ]
+
+    # Sin duplicados, conservando el orden.
+    return list(dict.fromkeys(ids))
+
+
+# ============================================================
 # CACHE GOOGLE SHEET
 # ============================================================
 
@@ -321,29 +355,81 @@ def _obtener_hojas(
     ):
         return _CACHE_HOJAS
 
-    sheet_id = os.getenv(
-        "GOOGLE_SHEET_ID"
-    )
+    sheet_ids = _obtener_sheet_ids()
 
-    if not sheet_id:
+    if not sheet_ids:
         raise ValueError(
-            "Falta configurar GOOGLE_SHEET_ID."
+            "Falta configurar GOOGLE_SHEET_ID "
+            "o GOOGLE_SHEET_IDS."
         )
 
     client = _get_client()
 
-    spreadsheet = client.open_by_key(
-        sheet_id
-    )
-
     hojas = []
+    errores = []
 
-    for worksheet in spreadsheet.worksheets():
+    for sheet_id in sheet_ids:
 
-        hojas.append({
-            "titulo": worksheet.title,
-            "filas": worksheet.get_all_values()
-        })
+        try:
+
+            spreadsheet = client.open_by_key(
+                sheet_id
+            )
+
+            titulos = [
+                worksheet.title
+                for worksheet
+                in spreadsheet.worksheets()
+            ]
+
+            # Una sola petición por libro: leer
+            # pestaña por pestaña agota la cuota
+            # de Google (60 lecturas/minuto).
+            respuesta = spreadsheet.values_batch_get(
+                [
+                    "'" + titulo.replace("'", "''") + "'"
+                    for titulo in titulos
+                ]
+            )
+
+            for titulo, rango in zip(
+                titulos,
+                respuesta.get("valueRanges", [])
+            ):
+
+                hojas.append({
+                    "libro": spreadsheet.title,
+                    "titulo": titulo,
+                    "filas": fill_gaps(
+                        rango.get("values", [])
+                    )
+                })
+
+        except Exception as exc:
+
+            # Si un libro falla (sin permisos, ID
+            # incorrecto...), seguimos con los demás.
+            print(
+                f"[SHEET ERROR] No se pudo leer "
+                f"el libro '{sheet_id}': {exc}"
+            )
+
+            errores.append(
+                f"{sheet_id}: {exc}"
+            )
+
+    if not hojas and errores:
+
+        # Si Google falla (p. ej. cuota agotada),
+        # mejor responder con datos algo viejos
+        # que dejar el bot sin Google Sheet.
+        if _CACHE_HOJAS:
+            return _CACHE_HOJAS
+
+        raise RuntimeError(
+            "No se pudo leer ningún Google Sheet. "
+            + " | ".join(errores)
+        )
 
     _CACHE_HOJAS = hojas
     _CACHE_TIMESTAMP = ahora
@@ -950,6 +1036,7 @@ def buscar_en_sheet(
                     continue
 
                 resultados.append({
+                    "libro": hoja.get("libro", ""),
                     "hoja": titulo,
                     "fila": numero_fila,
                     "datos": datos,
@@ -1270,7 +1357,11 @@ def formatear_resultados_sheet(
 
     hojas = list(
         dict.fromkeys(
-            resultado["hoja"]
+            (
+                f"{resultado['libro']} / {resultado['hoja']}"
+                if resultado.get("libro")
+                else resultado["hoja"]
+            )
             for resultado
             in resultados
         )
@@ -1316,8 +1407,16 @@ def sync_sheet() -> int:
 
         if rows:
 
+            libro = hoja.get("libro", "")
+
+            encabezado = (
+                f"[Libro: {libro} | Hoja: {titulo}]"
+                if libro
+                else f"[Hoja: {titulo}]"
+            )
+
             sections.append(
-                f"[Hoja: {titulo}]\n"
+                encabezado + "\n"
                 + "\n".join(rows)
             )
 
